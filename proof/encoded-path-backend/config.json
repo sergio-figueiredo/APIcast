@@ -1,0 +1,28 @@
+{
+  "services": [
+    {
+      "id": 42,
+      "proxy": {
+        "hosts": ["localhost"],
+        "policy_chain": [
+          {
+            "name": "apicast.policy.routing",
+            "configuration": {
+              "rules": [
+                {
+                  "url": "http://raw-path-upstream:9000/REST/svc",
+                  "replace_path": "{{uri | remove_first: '/REST/svc'}}",
+                  "condition": {
+                    "operations": [
+                      { "match": "path", "op": "matches", "value": "^(/REST/svc/.*|/REST/svc/?)" }
+                    ]
+                  }
+                }
+              ]
+            }
+          }
+        ]
+      }
+    }
+  ]
+}

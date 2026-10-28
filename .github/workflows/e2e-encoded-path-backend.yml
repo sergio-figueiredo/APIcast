@@ -1,0 +1,35 @@
+name: e2e-encoded-path-backend
+
+# Runs the published APIcast images with the routing rule 3scale (porta) generates for a
+# Backend with a public path, and checks the request path the upstream receives.
+on:
+  push:
+  workflow_dispatch:
+
+jobs:
+  e2e:
+    runs-on: ubuntu-latest
+    strategy:
+      fail-fast: false
+      matrix:
+        image:
+          - quay.io/3scale/apicast:3scale-2.15-stable
+          - quay.io/3scale/apicast:3scale-2.16-stable
+          - quay.io/3scale/apicast:latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Pull images
+        run: docker pull -q ${{ matrix.image }} && docker pull -q mirror.gcr.io/library/python:3-alpine
+      - name: Characters nginx must percent-encode again ("|", "\"", "<", ">", "\\", "^", "`", "{", "}", " ")
+        id: nginx_escaping
+        continue-on-error: true
+        run: proof/encoded-path-backend/check.sh ${{ matrix.image }} nginx-escaping
+      - name: Encoded "?" and "/" in a path segment ("%3F", "%2F")
+        id: path_decoding
+        continue-on-error: true
+        run: proof/encoded-path-backend/check.sh ${{ matrix.image }} path-decoding
+      - name: Summary
+        run: |
+          echo "### ${{ matrix.image }}" >> "$GITHUB_STEP_SUMMARY"
+          echo "- nginx re-encoding: ${{ steps.nginx_escaping.outcome }}" >> "$GITHUB_STEP_SUMMARY"
+          echo "- %3F / %2F preserved: ${{ steps.path_decoding.outcome }}" >> "$GITHUB_STEP_SUMMARY"
