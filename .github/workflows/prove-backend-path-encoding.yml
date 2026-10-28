@@ -1,0 +1,30 @@
+name: prove-backend-path-encoding
+
+on:
+  push:
+  workflow_dispatch:
+
+jobs:
+  prove:
+    runs-on: ubuntu-latest
+    container:
+      image: quay.io/3scale/apicast-ci:openresty-1.21.4-6
+      options: --user root
+    env:
+      TEST_NGINX_BINARY: openresty
+      ROVER: /usr/local/openresty/luajit/bin/rover
+    steps:
+      - uses: actions/checkout@v4
+      - name: Environment
+        run: |
+          openresty -v
+          git log -1 --format='%H %s'
+      - name: Dependencies
+        run: |
+          export PROJECT_PATH=$GITHUB_WORKSPACE TEST_NGINX_APICAST_PATH=$GITHUB_WORKSPACE/gateway HOME=$GITHUB_WORKSPACE
+          touch gateway/Roverfile.lock
+          make dependencies
+      - name: Prove t/apicast-policy-routing-backend-path-encoding.t
+        run: |
+          export PROJECT_PATH=$GITHUB_WORKSPACE TEST_NGINX_APICAST_PATH=$GITHUB_WORKSPACE/gateway HOME=$GITHUB_WORKSPACE
+          make prove PROVE_FILES=t/apicast-policy-routing-backend-path-encoding.t
