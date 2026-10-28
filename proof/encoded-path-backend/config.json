@@ -3,7 +3,9 @@
     {
       "id": 42,
       "proxy": {
-        "hosts": ["localhost"],
+        "hosts": [
+          "localhost"
+        ],
         "policy_chain": [
           {
             "name": "apicast.policy.routing",
@@ -14,12 +16,24 @@
                   "replace_path": "{{uri | remove_first: '/REST/svc'}}",
                   "condition": {
                     "operations": [
-                      { "match": "path", "op": "matches", "value": "^(/REST/svc/.*|/REST/svc/?)" }
+                      {
+                        "match": "path",
+                        "op": "matches",
+                        "value": "^(/REST/svc/.*|/REST/svc/?)"
+                      }
                     ]
                   }
                 }
               ]
             }
+          }
+        ],
+        "proxy_rules": [
+          {
+            "http_method": "GET",
+            "pattern": "/REST/svc/",
+            "metric_system_name": "hits",
+            "delta": 1
           }
         ]
       }
