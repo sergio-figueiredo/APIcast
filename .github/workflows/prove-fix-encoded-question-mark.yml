@@ -1,0 +1,36 @@
+name: prove-fix-encoded-question-mark
+
+# Runs the tests touched by the fix in the official development image of master.
+on:
+  push:
+  workflow_dispatch:
+
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    container:
+      image: quay.io/3scale/apicast-ci:openresty-1.27.1-1
+      options: --user root
+    env:
+      TEST_NGINX_BINARY: openresty
+      ROVER: /usr/local/openresty/luajit/bin/rover
+    steps:
+      - uses: actions/checkout@v4
+      - name: Environment
+        run: |
+          git config --system --add safe.directory '*'
+          openresty -v
+          git log -2 --format='%h %s'
+      - name: Dependencies
+        run: |
+          export PROJECT_PATH=$GITHUB_WORKSPACE TEST_NGINX_APICAST_PATH=$GITHUB_WORKSPACE/gateway HOME=$GITHUB_WORKSPACE
+          touch gateway/Roverfile.lock
+          make dependencies
+      - name: Unit tests (busted)
+        run: |
+          export PROJECT_PATH=$GITHUB_WORKSPACE HOME=$GITHUB_WORKSPACE
+          $ROVER exec bin/busted spec/upstream_spec.lua spec/policy/routing/upstream_selector_spec.lua
+      - name: Integration tests (Test::Nginx)
+        run: |
+          export PROJECT_PATH=$GITHUB_WORKSPACE TEST_NGINX_APICAST_PATH=$GITHUB_WORKSPACE/gateway HOME=$GITHUB_WORKSPACE
+          make prove PROVE_FILES="t/apicast-policy-routing.t t/http-proxy.t t/apicast-policy-maintenance-mode.t t/apicast-policy-jwt-claim-check.t t/apicast-path-routing.t"
